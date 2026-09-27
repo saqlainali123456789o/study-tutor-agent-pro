@@ -6,13 +6,13 @@ from tools.web_search import WebSearchTool
 
 
 def build_llm(api_key: str, model: str):
+
     return LLM(
         model=f"gemini/{model}",
         api_key=api_key,
         temperature=0.2,
         max_tokens=5000,
     )
-
 
 def build_agents(llm):
 
