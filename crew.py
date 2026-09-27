@@ -1,7 +1,6 @@
 from crewai import Crew, Process, Task
 
-from agents.agents import build_agents
-from config import get_gemini_api_key, get_gemini_model
+from agents.agents import build_agents, build_llm
 
 
 ROUTES = {
@@ -27,11 +26,6 @@ def choose_route(
     request: str,
     context: str = "",
 ) -> str:
-    """
-    Select the appropriate learning workflow.
-
-    This deterministic router handles obvious requests first.
-    """
 
     text = request.lower().strip()
 
@@ -175,12 +169,13 @@ Workflow:
 Complete the student's learning task using the workflow above.
 
 Important requirements:
+
 - Be accurate.
 - Explain clearly.
 - Adapt to the student's level.
-- Use the supplied study context when it is relevant.
-- Do not invent information from the supplied context.
-- If the supplied context does not contain a requested fact,
+- Use supplied study context when relevant.
+- Do not invent information from supplied context.
+- If context does not contain a requested fact,
   clearly distinguish that from general knowledge.
 """
 
@@ -194,27 +189,22 @@ Important requirements:
     )
 
 
-def run_route(
-    route: str,
-    api_key: str,
+def _run_with_model(
     model: str,
+    api_key: str,
+    route: str,
     request: str,
     context: str,
     learner: str,
     level: str,
 ) -> str:
 
-    route = route.upper().strip()
+    llm = build_llm(api_key, model)
 
-    if route not in ROUTES:
-        route = "TEACH"
-
-    agents = build_agents(
-        __import__("agents.agents", fromlist=["build_llm"])
-        .build_llm(api_key, model)
-    )
+    agents = build_agents(llm)
 
     agent_name = ROUTES[route]
+
     agent = agents[agent_name]
 
     task = _task_for(
@@ -236,3 +226,60 @@ def run_route(
     result = crew.kickoff()
 
     return str(result)
+
+
+def run_route(
+    route: str,
+    api_key: str,
+    model: str,
+    request: str,
+    context: str,
+    learner: str,
+    level: str,
+) -> str:
+
+    route = route.upper().strip()
+
+    if route not in ROUTES:
+        route = "TEACH"
+
+    # Primary model
+    models = [
+        model,
+        "gemini-2.5-flash-lite",
+    ]
+
+    # Remove duplicates while preserving order
+    models = list(dict.fromkeys(models))
+
+    errors = []
+
+    for current_model in models:
+
+        try:
+
+            return _run_with_model(
+                model=current_model,
+                api_key=api_key,
+                route=route,
+                request=request,
+                context=context,
+                learner=learner,
+                level=level,
+            )
+
+        except Exception as exc:
+
+            error_text = str(exc)
+
+            errors.append(
+                f"{current_model}: {error_text}"
+            )
+
+            # Continue to fallback model
+            continue
+
+    raise RuntimeError(
+        "All configured Gemini models were unavailable.\n\n"
+        + "\n\n".join(errors)
+    )
