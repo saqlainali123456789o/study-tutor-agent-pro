@@ -1,12 +1,11 @@
 from crewai import Agent, LLM
 
 from prompts import *
-
 from tools.calculator import CalculatorTool
 from tools.web_search import WebSearchTool
 
 
-def build_llm(api_key: str, model: str) -> LLM:
+def build_llm(api_key: str, model: str):
     return LLM(
         model=f"gemini/{model}",
         api_key=api_key,
@@ -15,127 +14,125 @@ def build_llm(api_key: str, model: str) -> LLM:
     )
 
 
-def build_agents(llm: LLM) -> dict[str, Agent]:
-    return {
+def build_agents(llm):
+
+    calculator = CalculatorTool()
+    web_search = WebSearchTool()
+
+    agents = {
+
         "manager": Agent(
-            role="Study Tutor Manager",
-            goal="Route each learner request to the right specialist workflow.",
+            role="Study Tutor Manager / Orchestrator",
+            goal=(
+                "Understand the student's learning need and route "
+                "the task to the appropriate specialist."
+            ),
             backstory=MANAGER_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "teacher": Agent(
             role="Expert Teacher",
-            goal="Teach concepts deeply and clearly using a structured pedagogy.",
+            goal="Teach concepts deeply and clearly.",
             backstory=TEACHER_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "research": Agent(
-            role="Research Analyst",
-            goal="Find and synthesize trustworthy external evidence when needed.",
+            role="Academic Research Agent",
+            goal="Find and explain reliable external information.",
             backstory=RESEARCH_SYSTEM,
+            tools=[web_search],
             llm=llm,
-            tools=[WebSearchTool()],
-            allow_delegation=False,
             verbose=False,
         ),
 
         "assessment": Agent(
             role="Assessment Designer",
-            goal="Generate high-quality learning assessments.",
+            goal="Create useful educational practice questions.",
             backstory=ASSESSMENT_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "evaluator": Agent(
-            role="Learning Evaluator",
-            goal="Diagnose understanding, missing knowledge, and misconceptions.",
+            role="Student Answer Evaluator",
+            goal="Evaluate student answers and identify misconceptions.",
             backstory=EVALUATOR_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "revision": Agent(
-            role="Revision Coach",
-            goal="Create targeted revision from weak areas.",
+            role="Revision Specialist",
+            goal="Help students strengthen weak concepts.",
             backstory=REVISION_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "planner": Agent(
             role="Learning Planner",
-            goal="Create adaptive study sequences and schedules.",
+            goal="Create realistic personalized learning plans.",
             backstory=PLANNER_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "case": Agent(
-            role="Case Study Tutor",
-            goal="Apply theory to realistic cases and scenarios.",
+            role="Case Study Instructor",
+            goal="Connect theory with realistic cases.",
             backstory=CASE_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "socratic": Agent(
             role="Socratic Tutor",
-            goal="Guide learners through reasoning with purposeful questions.",
+            goal="Guide students through reasoning using questions.",
             backstory=SOCRATIC_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "notes": Agent(
             role="Study Notes Specialist",
-            goal="Create structured notes for learning and revision.",
+            goal="Create structured and useful study notes.",
             backstory=NOTES_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "flashcards": Agent(
             role="Flashcard Specialist",
-            goal="Create active-recall flashcards.",
+            goal="Create high-quality active-recall flashcards.",
             backstory=FLASHCARD_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "exam": Agent(
-            role="Exam Preparation Agent",
-            goal="Coordinate diagnosis, revision, practice, and mock assessment.",
+            role="Exam Preparation Specialist",
+            goal="Prepare students through diagnosis, practice and evaluation.",
             backstory=EXAM_SYSTEM,
             llm=llm,
-            allow_delegation=False,
             verbose=False,
         ),
 
         "calculator": Agent(
-            role="Quantitative Tutor",
-            goal="Explain quantitative solutions using deterministic calculations.",
+            role="Educational Calculator",
+            goal="Perform accurate mathematical calculations.",
             backstory=(
-                "Solve quantitative learning problems carefully and explain "
-                "each step. Use the calculator tool for arithmetic."
+                "You are a precise educational calculator. "
+                "Use the calculator tool for mathematical operations. "
+                "Show the reasoning clearly when appropriate."
             ),
+            tools=[calculator],
             llm=llm,
-            tools=[CalculatorTool()],
-            allow_delegation=False,
             verbose=False,
         ),
     }
+
+    return agents
