@@ -2,7 +2,7 @@ from io import BytesIO
 from pathlib import Path
 import fitz
 from docx import Document
-from ..utils import chunk_text
+from utils import chunk_text
 
 
 def extract_pdf(data: bytes) -> list[dict]:
