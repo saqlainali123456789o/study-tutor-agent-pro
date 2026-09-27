@@ -1,35 +1,45 @@
-import os
 import streamlit as st
 
-APP_NAME = "Study Tutor Agent"
+
+APP_NAME = "Study Tutor Agent Pro"
 APP_VERSION = "1.0.0"
-DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
-DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
+
+# Primary + fallback Gemini models
+GEMINI_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+]
+
+EMBEDDING_MODEL = "gemini-embedding-001"
 
 
-def get_secret(name: str, default: str | None = None) -> str | None:
+def get_gemini_api_key():
+    api_key = st.secrets.get("GEMINI_API_KEY", "")
+
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY was not found in Streamlit Secrets."
+        )
+
+    return api_key
+
+
+def get_gemini_model():
+    return GEMINI_MODELS[0]
+
+
+def get_embedding_model():
+    return EMBEDDING_MODEL
+
+
+def validate_configuration():
     try:
-        value = st.secrets.get(name)
-        if value:
-            return str(value)
-    except Exception:
-        pass
-    return os.getenv(name, default)
+        api_key = get_gemini_api_key()
 
+        if not api_key:
+            return False, "GEMINI_API_KEY is missing."
 
-def get_gemini_api_key() -> str | None:
-    return get_secret("GEMINI_API_KEY") or get_secret("GOOGLE_API_KEY")
+        return True, "Configuration is valid."
 
-
-def get_gemini_model() -> str:
-    return get_secret("GEMINI_MODEL", DEFAULT_GEMINI_MODEL) or DEFAULT_GEMINI_MODEL
-
-
-def get_embedding_model() -> str:
-    return get_secret("GEMINI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL) or DEFAULT_EMBEDDING_MODEL
-
-
-def validate_configuration() -> tuple[bool, str]:
-    if not get_gemini_api_key():
-        return False, "GEMINI_API_KEY is missing. Add it in Streamlit Community Cloud → App settings → Secrets."
-    return True, "Configuration ready."
+    except Exception as exc:
+        return False, str(exc)
