@@ -1,5 +1,5 @@
 from crewai import Crew, Process, Task
-from .agents.agents import build_agents
+from agents.agents import build_agents
 
 ROUTES = {
     "TEACH": "teacher", "KNOWLEDGE": "teacher", "RESEARCH": "research", "PRACTICE": "assessment",
