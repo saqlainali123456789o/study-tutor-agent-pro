@@ -199,7 +199,10 @@ def _run_with_model(
     level: str,
 ) -> str:
 
-    llm = build_llm(api_key, model)
+    llm = build_llm(
+        api_key=api_key,
+        model=model,
+    )
 
     agents = build_agents(llm)
 
@@ -228,6 +231,28 @@ def _run_with_model(
     return str(result)
 
 
+def _is_retryable_error(error_text: str) -> bool:
+
+    retryable_patterns = [
+        "503",
+        "UNAVAILABLE",
+        "high demand",
+        "temporarily unavailable",
+        "429",
+        "RESOURCE_EXHAUSTED",
+        "rate limit",
+        "timeout",
+        "timed out",
+    ]
+
+    error_upper = error_text.upper()
+
+    return any(
+        pattern.upper() in error_upper
+        for pattern in retryable_patterns
+    )
+
+
 def run_route(
     route: str,
     api_key: str,
@@ -243,13 +268,13 @@ def run_route(
     if route not in ROUTES:
         route = "TEACH"
 
-    # Primary model
+    # Primary model + fallback model
     models = [
         model,
-        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash-lite",
     ]
 
-    # Remove duplicates while preserving order
+    # Remove duplicates
     models = list(dict.fromkeys(models))
 
     errors = []
@@ -276,10 +301,18 @@ def run_route(
                 f"{current_model}: {error_text}"
             )
 
-            # Continue to fallback model
+            # Only move to fallback for temporary/capacity errors.
+            if not _is_retryable_error(error_text):
+
+                raise RuntimeError(
+                    f"Gemini model '{current_model}' failed:\n\n"
+                    f"{error_text}"
+                ) from exc
+
+            # Otherwise try fallback model.
             continue
 
     raise RuntimeError(
-        "All configured Gemini models were unavailable.\n\n"
+        "Gemini models are temporarily unavailable.\n\n"
         + "\n\n".join(errors)
     )
