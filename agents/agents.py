@@ -1,7 +1,13 @@
 from crewai import Agent, LLM
-from ..prompts import *
-from ..tools.calculator import CalculatorTool
-from ..tools.web_search import WebSearchTool
+
+from prompts.manager_prompts import *
+from prompts.teacher_prompts import *
+from prompts.research_prompts import *
+from prompts.assessment_prompts import *
+from prompts.revision_prompts import *
+
+from tools.calculator import CalculatorTool
+from tools.web_search import WebSearchTool
 
 
 def build_llm(api_key: str, model: str) -> LLM:
